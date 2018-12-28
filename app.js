@@ -9,10 +9,59 @@ class Item {
 //UI class to handle UI tasks.
 
 class UI {
-  static displayItems() {
-    const items = Store.getItems();
+  static displayItems(sort = '') {
+    const items = Store.getItems(sort);
+
+    if (sort == 'name') {
+      const nameHeader = document.querySelector('#header-name');
+      const countHeader = document.querySelector('#header-count');
+      if (nameHeader.classList.contains('asc')) {
+        items.sort((a, b) =>
+          a.itemName.toLowerCase() < b.itemName.toLowerCase()
+            ? 1
+            : b.itemName.toLowerCase() < a.itemName.toLowerCase()
+            ? -1
+            : 0
+        );
+        nameHeader.classList.remove('asc');
+        countHeader.classList.remove('asc');
+      } else {
+        items.sort((a, b) =>
+          a.itemName.toLowerCase() > b.itemName.toLowerCase()
+            ? 1
+            : b.itemName.toLowerCase() > a.itemName.toLowerCase()
+            ? -1
+            : 0
+        );
+        nameHeader.classList.add('asc');
+        countHeader.classList.remove('asc');
+      }
+    } else if (sort == 'count') {
+      const nameHeader = document.querySelector('#header-name');
+      const countHeader = document.querySelector('#header-count');
+      if (countHeader.classList.contains('asc')) {
+        items.sort((a, b) =>
+          a.itemCount < b.itemCount ? 1 : b.itemCount < a.itemCount ? -1 : 0
+        );
+        nameHeader.classList.remove('asc');
+        countHeader.classList.remove('asc');
+      } else {
+        items.sort((a, b) =>
+          a.itemCount > b.itemCount ? 1 : b.itemCount > a.itemCount ? -1 : 0
+        );
+        nameHeader.classList.remove('asc');
+        countHeader.classList.add('asc');
+      }
+    }
 
     items.forEach(item => UI.addItemToList(item));
+  }
+
+  static clearItems() {
+    const list = document.querySelector('#item-list');
+    while (list.firstChild) {
+      list.removeChild(list.firstChild);
+    }
   }
 
   static addItemToList(item) {
@@ -22,23 +71,10 @@ class UI {
 
     row.innerHTML = `
         <td>${item.itemName}</td>
-        <td>${item.itemCount}</td>`;
-
-    if (item.itemCount == 0) {
-      row.innerHTML =
-        row.innerHTML +
-        `
-            <td><a href="#" class="btn btn-sm increment">+</a><a href="#" class="btn btn-sm decrement" disabled>-</a></td>
-            <td><a href="#" class="btn btn-sm btn-danger delete">X</a></td>
+        <td>${item.itemCount}</td>
+        <td><a href="#" class="btn btn-sm increment">+</a><a href="#" class="btn btn-sm decrement">-</a></td>
+        <td><a href="#" class="btn btn-sm btn-danger delete">X</a></td>
             `;
-    } else {
-      row.innerHTML =
-        row.innerHTML +
-        `
-            <td><a href="#" class="btn btn-sm increment">+</a><a href="#" class="btn btn-sm decrement">-</a></td>
-            <td><a href="#" class="btn btn-sm btn-danger delete">X</a></td>
-            `;
-    }
     list.appendChild(row);
   }
 
@@ -64,9 +100,9 @@ class UI {
     const div = document.createElement('div');
     div.className = `alert alert-${className}`;
     div.appendChild(document.createTextNode(message));
-    const container = document.querySelector('.container');
-    const form = document.querySelector('#item-form');
-    container.insertBefore(div, form);
+    const container = document.querySelector('.modal-body');
+    const form = document.querySelector('#titleTag');
+    form.insertAdjacentElement('afterend', div); //(div, form);
     //Vanish in 3 seconds
     setTimeout(() => document.querySelector('.alert').remove(), 3000);
   }
@@ -75,12 +111,16 @@ class UI {
     document.querySelector('#itemName').value = '';
     document.querySelector('#itemCount').value = '';
   }
+
+  static showModal() {
+    $('#addItemModal').modal();
+  }
 }
 
 // Store class for persistence
 
 class Store {
-  static getItems() {
+  static getItems(sort = '') {
     let items;
     if (localStorage.getItem('items') === null) {
       items = [];
@@ -131,7 +171,7 @@ class Store {
 }
 
 //Event: Display items
-document.addEventListener('DOMContentLoaded', UI.displayItems);
+document.addEventListener('DOMContentLoaded', UI.displayItems());
 
 //Event: Add an item
 document.querySelector('#item-form').addEventListener('submit', e => {
@@ -157,6 +197,8 @@ document.querySelector('#item-form').addEventListener('submit', e => {
     // Show a success message
     UI.showAlert('Item Added', 'success');
 
+    $('#addItemModal').modal('toggle');
+
     // Clear fields
     UI.clearFields();
   }
@@ -164,6 +206,7 @@ document.querySelector('#item-form').addEventListener('submit', e => {
 
 //Event: Remove an item
 document.querySelector('#item-list').addEventListener('click', e => {
+  e.preventDefault();
   if (e.target.classList.contains('delete')) {
     // Remove book from UI
     UI.deleteItem(e.target);
@@ -180,6 +223,7 @@ document.querySelector('#item-list').addEventListener('click', e => {
 //Event: Increase count of item
 
 document.querySelector('#item-list').addEventListener('click', e => {
+  e.preventDefault();
   if (e.target.classList.contains('increment')) {
     // Increment store
     Store.incrementCount(
@@ -194,6 +238,7 @@ document.querySelector('#item-list').addEventListener('click', e => {
 
 //Event: Decrease count of item
 document.querySelector('#item-list').addEventListener('click', e => {
+  e.preventDefault();
   if (e.target.classList.contains('decrement')) {
     // Increment store
     Store.decrementCount(
@@ -204,4 +249,24 @@ document.querySelector('#item-list').addEventListener('click', e => {
     // Increment UI
     UI.decrementCount(e.target);
   }
+});
+
+// Sort list by item name
+document.querySelector('#header-name').addEventListener('click', e => {
+  e.preventDefault();
+  UI.clearItems();
+  UI.displayItems('name');
+});
+
+// Sort list by item count
+document.querySelector('#header-count').addEventListener('click', e => {
+  e.preventDefault();
+  UI.clearItems();
+  UI.displayItems('count');
+});
+
+// Display modal form
+document.querySelector('#testButton').addEventListener('click', e => {
+  e.preventDefault();
+  UI.showModal();
 });
